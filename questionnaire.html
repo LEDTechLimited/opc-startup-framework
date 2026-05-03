@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Your Blueprint — OPC Startup Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="assets/questions.js"></script>
+<script src="assets/layer-images.js"></script>
+<script src="assets/blueprint-generator.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body class="apple">
+
+<nav class="nav nav-apple">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand-apple">OPC <span>Startup Framework</span></a>
+    <a href="framework.html" class="nav-link-apple">Framework</a>
+  </div>
+</nav>
+
+<main x-data="questionnaire">
+
+  <div class="progress-thin" x-show="!showReview">
+    <div class="progress-thin-fill" :style="`width: ${progress()}%`"></div>
+  </div>
+
+  <!-- ============ QUESTIONNAIRE ============ -->
+  <div x-show="!showReview">
+
+    <article class="apple-page">
+
+      <!-- Hero — minimal -->
+      <header class="apple-hero">
+        <h1>Start your One Person Company with AI.</h1>
+        <p>Just takes 10-15 minutes. Auto-saved.</p>
+      </header>
+
+      <!-- Sections -->
+      <template x-for="s in sections" :key="s.id">
+        <section class="apple-section" :id="'sec-' + s.id">
+
+          <div class="apple-section-image" x-html="window.OPC_LAYER_IMAGES[s.layer]"></div>
+          <div class="apple-section-num" x-text="'Layer ' + s.layer"></div>
+          <h2 class="apple-section-title" x-text="s.title"></h2>
+          <p class="apple-section-sub" x-text="s.subtitle"></p>
+
+          <div class="apple-questions">
+            <template x-for="q in s.questions" :key="q.id">
+              <div class="apple-q">
+                <label :for="q.id" x-text="q.label"></label>
+                <p class="apple-q-guide" x-show="q.guide" x-text="q.guide"></p>
+                <p class="apple-q-help" x-show="q.help" x-text="q.help"></p>
+
+                <template x-if="q.type === 'text'">
+                  <input :id="q.id" type="text" :placeholder="q.placeholder || ''" x-model="answers[q.id]">
+                </template>
+                <template x-if="q.type === 'number'">
+                  <input :id="q.id" type="text" inputmode="numeric" :placeholder="q.placeholder || ''" x-model="answers[q.id]">
+                </template>
+                <template x-if="q.type === 'textarea'">
+                  <textarea :id="q.id" :rows="q.rows || 3" :placeholder="q.placeholder || ''" x-model="answers[q.id]"></textarea>
+                </template>
+                <template x-if="q.type === 'radio'">
+                  <div class="apple-pills">
+                    <template x-for="opt in q.options" :key="opt">
+                      <label class="apple-pill" :class="{ on: answers[q.id] === opt }">
+                        <input type="radio" :name="q.id" :value="opt" x-model="answers[q.id]">
+                        <span x-text="opt"></span>
+                      </label>
+                    </template>
+                  </div>
+                </template>
+                <template x-if="q.type === 'checkbox-list'">
+                  <div class="apple-pills">
+                    <template x-for="opt in q.options" :key="opt">
+                      <label class="apple-pill" :class="{ on: isChecked(q.id, opt) }">
+                        <input type="checkbox" :checked="isChecked(q.id, opt)" @change="toggleCheckbox(q.id, opt)">
+                        <span x-text="opt"></span>
+                      </label>
+                    </template>
+                  </div>
+                </template>
+
+              </div>
+            </template>
+          </div>
+
+        </section>
+      </template>
+
+      <!-- Generate -->
+      <footer class="apple-footer">
+        <button class="apple-cta" @click="startReview()">
+          Generate Blueprint
+        </button>
+        <p>
+          <span x-text="progress()"></span>% answered
+          <span class="dim">·</span>
+          <button class="link-btn" @click="resetAll()">reset</button>
+        </p>
+      </footer>
+
+    </article>
+
+  </div>
+
+  <!-- ============ OUTPUT ============ -->
+  <div x-show="showReview" x-cloak>
+
+    <article class="apple-page">
+
+      <header class="apple-hero">
+        <h1 x-text="output.businessName"></h1>
+        <p>Built for Claude.ai to read as your strategic co-pilot.</p>
+      </header>
+
+      <div class="apple-actions">
+        <button class="apple-cta" @click="downloadMd()">
+          Download <strong>.md</strong> for Claude.ai
+        </button>
+        <p class="apple-cta-note">The <code>.md</code> already contains Claude's instructions + your data. Drop it into a Claude Project and start chatting.</p>
+
+        <button class="apple-cta-ghost" @click="openClaude()">Open Claude.ai →</button>
+        <button class="apple-cta-ghost apple-cta-tertiary" @click="downloadPdf()">Download PDF (for you to read)</button>
+        <button class="apple-cta-ghost apple-cta-tertiary" @click="copyPrompt()">Copy AI Prompt only</button>
+      </div>
+
+      <div class="apple-steps">
+        <ol>
+          <li>Download the <code>.md</code> above.</li>
+          <li>Open Claude.ai → <strong>New Project</strong>.</li>
+          <li>Upload the <code>.md</code> as <strong>Project knowledge</strong>.</li>
+          <li>Start chatting — Claude reads the instructions inside the file automatically.</li>
+        </ol>
+      </div>
+
+      <details class="apple-preview">
+        <summary>Preview blueprint</summary>
+        <pre x-text="output.md"></pre>
+      </details>
+
+      <footer class="apple-footer">
+        <button class="link-btn" @click="showReview = false; scrollToTop();">← Back to questions</button>
+      </footer>
+
+    </article>
+  </div>
+
+</main>
+
+<style>[x-cloak] { display: none !important; }</style>
+
+</body>
+</html>
